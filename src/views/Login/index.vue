@@ -70,9 +70,10 @@ import {
   validateEmail,
   validateVCode
 } from "@/utils/validate";
+import { reactive, ref, isRef, onMounted } from "@vue/composition-api";
 export default {
   name: "login",
-  data() {
+  setup(props, { refs }) {
     // 验证用户名
     let validateUsername = (rule, value, callback) => {
       if (value === "") {
@@ -86,8 +87,8 @@ export default {
     // 验证密码
     let validatePassword = (rule, value, callback) => {
       // 过滤后的数据
-      this.ruleForm.password = stripscript(value);
-      value = this.ruleForm.password;
+      ruleForm.password = stripscript(value);
+      value = ruleForm.password;
       if (value === "") {
         callback(new Error("请输入密码"));
       } else if (validatePass(value)) {
@@ -100,12 +101,12 @@ export default {
     // 验证密码
     let validatePasswords = (rule, value, callback) => {
       //如果模块值为login，直接通过
-      if (this.model === "login") {
+      if (model.value === "login") {
         callback();
       }
       // 过滤后的数据
-      this.ruleForm.passwords = stripscript(value);
-      value = this.ruleForm.passwords;
+      ruleForm.passwords = stripscript(value);
+      value = ruleForm.passwords;
       if (value === "") {
         callback(new Error("请再次输入密码"));
       } else if (value != this.ruleForm.password) {
@@ -124,41 +125,72 @@ export default {
         callback();
       }
     };
-    return {
-      menuTab: [
-        { txt: "登录", current: true, type: "login" },
-        { txt: "注册", current: false, type: "register" }
-      ],
-      //模块值
-      model: "login",
-      ruleForm: {
-        username: "",
-        password: "",
-        passwords: "",
-        code: ""
-      },
-      rules: {
-        username: [{ validator: validateUsername, trigger: "blur" }],
-        password: [{ validator: validatePassword, trigger: "blur" }],
-        passwords: [{ validator: validatePasswords, trigger: "blur" }],
-        code: [{ validator: validateCode, trigger: "blur" }]
-      }
-    };
-  },
-  created() {},
-  mounted() {},
-  methods: {
-    toggleMenu(data) {
+
+    /**
+     * 声明数据
+     */
+    //这里防止data数据、生命周期、自定义的函数
+
+    //声明的数据是对象类型用reactive。    Reactive（声明单一对象时使用）取得一个对象并返回原始对象的响应数据处理。
+    const obj = reactive({ count: 0 });
+    const menuTab = reactive([
+      { txt: "登录", current: true, type: "login" },
+      { txt: "注册", current: false, type: "register" }
+    ]);
+    console.log(menuTab);
+    //声明的数据是基础类型用ref
+    //ref（声明基础数据类型变量时使用内部值并返回一个响应性且可变的ref对象。
+    //ref对象具有.value指向内部值的单个属性。
+    //const number = ref(0);获取值方式：number.value
+
+    //模块值
+    const model = ref("login");
+    console.log(model.value);
+    console.log(isRef(model) ? true : false);
+
+    //表单绑定数据
+    const ruleForm = reactive({
+      username: "",
+      password: "",
+      passwords: "",
+      code: ""
+    });
+
+    //表单的验证
+    const rules = reactive({
+      username: [{ validator: validateUsername, trigger: "blur" }],
+      password: [{ validator: validatePassword, trigger: "blur" }],
+      passwords: [{ validator: validatePasswords, trigger: "blur" }],
+      code: [{ validator: validateCode, trigger: "blur" }]
+    });
+
+    // //检查一个对象是否是ref对象：
+    // const unwrapped = isRef(foo) ? foo.value : foo;
+
+    // function useMousePosition() {
+    //   const pos = reactive({
+    //     x: 0,
+    //     y: 0
+    //   });
+    //   return toRefs(pos);
+    // }
+    // const { x, y } = useMousePosition();
+    // //toRefs将reactive对象转换为普通对象，保证对象解构或拓展运算符不会丢失原有响应式对象的响应。
+
+    /**
+     * 声明函数
+     */
+    const toggleMenu = data => {
       console.log(data);
-      this.menuTab.forEach(element => {
+      menuTab.forEach(element => {
         element.current = false;
       });
       //高光
       data.current = true;
-      this.model = data.type;
-    },
-    submitForm(formName) {
-      this.$refs[formName].validate(valid => {
+      model.value = data.type;
+    };
+    const submitForm = formName => {
+      refs[formName].validate(valid => {
         if (valid) {
           alert("submit!");
         } else {
@@ -166,8 +198,26 @@ export default {
           return false;
         }
       });
-    }
+    };
+
+    /**
+     * 生命周期
+     */
+    //挂载完成后
+    onMounted(() => {});
+
+    return {
+      toggleMenu,
+      submitForm,
+      menuTab,
+      model,
+      ruleForm,
+      rules
+    };
   },
+
+  created() {},
+
   props: {},
   watch: {}
 };
